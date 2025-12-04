@@ -45,13 +45,13 @@ type ScanResult struct {
 
 // Finding represents a detected threat (simplified for dashboard)
 type Finding struct {
-	FilePath    string   `json:"file_path"`
-	FileName    string   `json:"file_name"`
-	FileSize    int64    `json:"file_size"`
-	ModTime     string   `json:"mod_time"`
-	RiskLevel   string   `json:"risk_level"`
-	Matches     []string `json:"matches"`
-	Categories  []string `json:"categories"`
+	FilePath    string          `json:"file_path"`
+	FileName    string          `json:"file_name"`
+	FileSize    int64           `json:"file_size"`
+	ModTime     string          `json:"mod_time"`
+	RiskLevel   string          `json:"risk_level"`
+	Matches     []scanner.Match `json:"matches"`
+	Categories  []string        `json:"categories"`
 }
 
 // Server represents the dashboard server
@@ -343,12 +343,10 @@ func (s *Server) runScan(scanID, target string, days int) {
 	// Convert scanner findings to server findings
 	serverFindings := make([]Finding, 0, len(findings))
 	for _, f := range findings {
-		matches := make([]string, 0, len(f.Matches))
 		categories := make([]string, 0)
 		categoryMap := make(map[string]bool)
 
 		for _, m := range f.Matches {
-			matches = append(matches, m.Pattern)
 			if !categoryMap[m.Category] {
 				categories = append(categories, m.Category)
 				categoryMap[m.Category] = true
@@ -361,7 +359,7 @@ func (s *Server) runScan(scanID, target string, days int) {
 			FileSize:   f.FileSize,
 			ModTime:    f.ModTime.Format("2006-01-02 15:04:05"),
 			RiskLevel:  f.RiskLevel,
-			Matches:    matches,
+			Matches:    f.Matches,
 			Categories: categories,
 		})
 	}
