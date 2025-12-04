@@ -6,8 +6,21 @@
 *.temp
 erklig_temp_scan.tmp
 
-# Report files (optional - remove if you want to track reports)
+# Report files
 erklig_threat_report.txt
+erklig_report.txt
+erklig_report.json
+erklig_report.html
+threat_report.txt
+threat_report.json
+threat_report.html
+
+# Binary (root level only)
+/erklig
+/erklig.exe
+
+# Go
+go.sum
 
 # OS generated files
 .DS_Store
@@ -34,5 +47,4 @@ Thumbs.db
 # Test directories
 tests/sample_malware/
 tests/temp/
-
-ROADMAP.md
+testbed_mount/
