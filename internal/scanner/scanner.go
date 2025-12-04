@@ -43,6 +43,7 @@ type Config struct {
 	Days        int
 	Verbose     bool
 	Interactive bool
+	ScanCore    bool // Scan CMS core directories (wp-includes, wp-admin, etc.)
 }
 
 // Scanner is the main scanning engine
@@ -114,18 +115,20 @@ var defaultSignatures = []Signature{
 	{Name: "short_open_tag_eval", Pattern: `<\?=\s*\$_`, Category: "Suspicious", Severity: "high"},
 }
 
-// Default whitelist directories
+// Default whitelist directories (can be disabled with --scan-core)
 var defaultWhitelist = []string{
 	"vendor",
 	"node_modules",
 	".git",
+}
+
+// CMS core directories (scanned with verification when --scan-core is enabled)
+var cmsCoreDirs = []string{
 	"wp-includes",
 	"wp-admin",
-	"libraries",
-	"core",
+	"libraries",       // Joomla
+	"core",            // Drupal
 	"framework",
-	"cache",
-	"logs",
 }
 
 // Scannable file extensions

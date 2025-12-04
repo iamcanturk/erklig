@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERKLIG Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #22c55e;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--bg-tertiary);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        .threat-critical { border-left: 4px solid var(--danger); }
+        .threat-high { border-left: 4px solid var(--warning); }
+        .threat-medium { border-left: 4px solid #f59e0b; }
+        .threat-low { border-left: 4px solid var(--success); }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .logo-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between max-w-7xl mx-auto">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-shield-alt text-3xl text-blue-500"></i>
+                <div>
+                    <h1 class="text-2xl font-bold logo-text">ERKLIG</h1>
+                    <p class="text-xs text-gray-400">Mighty Backdoor Analysis Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="connection-status" class="flex items-center text-sm">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 pulse"></span>
+                    Connected
+                </span>
+                <span class="text-gray-400 text-sm">v2.0.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Scans</p>
+                        <p id="stat-total" class="text-3xl font-bold">0</p>
+                    </div>
+                    <i class="fas fa-search text-2xl text-blue-500"></i>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Threats Found</p>
+                        <p id="stat-threats" class="text-3xl font-bold text-red-500">0</p>
+                    </div>
+                    <i class="fas fa-bug text-2xl text-red-500"></i>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Files Scanned</p>
+                        <p id="stat-files" class="text-3xl font-bold">0</p>
+                    </div>
+                    <i class="fas fa-file-code text-2xl text-green-500"></i>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Scans</p>
+                        <p id="stat-active" class="text-3xl font-bold text-yellow-500">0</p>
+                    </div>
+                    <i class="fas fa-spinner text-2xl text-yellow-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Scan Form -->
+        <div class="card p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">
+                <i class="fas fa-plus-circle mr-2 text-blue-500"></i>
+                New Scan
+            </h2>
+            <form id="scan-form" class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-400 mb-2">Target Directory</label>
+                    <input type="text" id="target-input" 
+                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                           placeholder="/var/www/html">
+                </div>
+                <div class="w-full md:w-48">
+                    <label class="block text-sm text-gray-400 mb-2">Days Filter</label>
+                    <input type="number" id="days-input" 
+                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                           placeholder="0 = All" value="0">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn-primary px-8 py-3 rounded-lg font-semibold">
+                        <i class="fas fa-play mr-2"></i>
+                        Start Scan
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Active Scans -->
+        <div class="card p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">
+                <i class="fas fa-tasks mr-2 text-yellow-500"></i>
+                Active Scans
+            </h2>
+            <div id="active-scans" class="space-y-4">
+                <p class="text-gray-400 text-center py-8">No active scans</p>
+            </div>
+        </div>
+
+        <!-- Recent Results -->
+        <div class="card p-6">
+            <h2 class="text-xl font-semibold mb-4">
+                <i class="fas fa-history mr-2 text-green-500"></i>
+                Recent Results
+            </h2>
+            <div id="results-list" class="space-y-4">
+                <p class="text-gray-400 text-center py-8">No scan results yet</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-700 px-6 py-4 mt-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-sm text-gray-400">
+            <p>© 2024 ERKLIG by <a href="https://iamcanturk.dev" class="text-blue-400 hover:underline">Can TÜRK</a></p>
+            <div class="flex items-center space-x-4">
+                <a href="https://github.com/iamcanturk/erklig" class="hover:text-white">
+                    <i class="fab fa-github mr-1"></i> GitHub
+                </a>
+                <a href="https://twitter.com/iamcanturk" class="hover:text-white">
+                    <i class="fab fa-twitter mr-1"></i> Twitter
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // WebSocket connection
+        let ws;
+        let scans = {};
+
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}/ws`);
+            
+            ws.onopen = () => {
+                document.getElementById('connection-status').innerHTML = 
+                    '<span class="w-2 h-2 bg-green-500 rounded-full mr-2 pulse"></span>Connected';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('connection-status').innerHTML = 
+                    '<span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>Disconnected';
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+        }
+
+        function handleWebSocketMessage(message) {
+            switch (message.event) {
+                case 'scan_started':
+                    scans[message.data.id] = message.data;
+                    updateActiveScans();
+                    break;
+                case 'scan_progress':
+                    if (scans[message.data.id]) {
+                        scans[message.data.id] = message.data;
+                        updateActiveScans();
+                    }
+                    break;
+                case 'scan_completed':
+                    delete scans[message.data.id];
+                    updateActiveScans();
+                    addResult(message.data);
+                    break;
+            }
+            updateStats();
+        }
+
+        function updateActiveScans() {
+            const container = document.getElementById('active-scans');
+            const activeList = Object.values(scans).filter(s => s.status === 'scanning');
+            
+            if (activeList.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">No active scans</p>';
+                return;
+            }
+
+            container.innerHTML = activeList.map(scan => `
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium">${scan.target}</span>
+                        <span class="text-sm text-yellow-500">
+                            <i class="fas fa-spinner fa-spin mr-1"></i>
+                            Scanning...
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full transition-all" 
+                             style="width: ${scan.progress}%"></div>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span>${scan.scanned_files || 0} / ${scan.total_files || '?'} files</span>
+                        <span>${scan.threats || 0} threats</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addResult(result) {
+            const container = document.getElementById('results-list');
+            if (container.querySelector('p')) {
+                container.innerHTML = '';
+            }
+
+            const riskClass = result.threats > 5 ? 'threat-critical' : 
+                             result.threats > 0 ? 'threat-high' : 'threat-low';
+
+            container.insertAdjacentHTML('afterbegin', `
+                <div class="bg-gray-800 rounded-lg p-4 ${riskClass}">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-medium">${result.target}</span>
+                            <p class="text-sm text-gray-400">
+                                ${result.scanned_files} files scanned
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold ${result.threats > 0 ? 'text-red-500' : 'text-green-500'}">
+                                ${result.threats}
+                            </span>
+                            <p class="text-sm text-gray-400">threats</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-4">
+                        <span class="text-sm text-gray-400">
+                            <i class="fas fa-clock mr-1"></i>
+                            ${new Date(result.end_time).toLocaleString()}
+                        </span>
+                        <button onclick="viewReport('${result.id}')" 
+                                class="text-blue-400 hover:text-blue-300 text-sm">
+                            <i class="fas fa-eye mr-1"></i>
+                            View Report
+                        </button>
+                    </div>
+                </div>
+            `);
+        }
+
+        function updateStats() {
+            // Fetch stats from API
+            fetch('/api/scans')
+                .then(r => r.json())
+                .then(data => {
+                    const total = data.length;
+                    const active = data.filter(s => s.status === 'scanning').length;
+                    const threats = data.reduce((sum, s) => sum + (s.threats || 0), 0);
+                    const files = data.reduce((sum, s) => sum + (s.scanned_files || 0), 0);
+
+                    document.getElementById('stat-total').textContent = total;
+                    document.getElementById('stat-active').textContent = active;
+                    document.getElementById('stat-threats').textContent = threats;
+                    document.getElementById('stat-files').textContent = files;
+                });
+        }
+
+        function viewReport(scanId) {
+            window.open(`/api/report/${scanId}`, '_blank');
+        }
+
+        // Form submission
+        document.getElementById('scan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const target = document.getElementById('target-input').value;
+            const days = parseInt(document.getElementById('days-input').value) || 0;
+
+            if (!target) {
+                alert('Please enter a target directory');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target, days })
+                });
+
+                if (response.ok) {
+                    const scan = await response.json();
+                    scans[scan.id] = scan;
+                    updateActiveScans();
+                    document.getElementById('target-input').value = '';
+                }
+            } catch (error) {
+                console.error('Failed to start scan:', error);
+            }
+        });
+
+        // Initialize
+        connectWebSocket();
+        updateStats();
+    </script>
+</body>
+</html>

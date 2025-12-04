@@ -60,6 +60,25 @@ Author: Can TÜRK <https://iamcanturk.dev>`,
 	RunE: runScan,
 }
 
+var serveCmd = &cobra.Command{
+	Use:   "serve",
+	Short: "Start the ERKLIG web dashboard",
+	Long: `Start a local web server with a dashboard for managing scans.
+
+The dashboard provides:
+  - Visual scan management
+  - Real-time scan progress
+  - Interactive threat reports
+  - WebSocket-based live updates
+
+Examples:
+  erklig serve              # Start on default port 8080
+  erklig serve --port 3000  # Start on custom port`,
+	RunE: runServe,
+}
+
+var servePort int
+
 func init() {
 	rootCmd.Flags().StringVarP(&targetDir, "target", "t", ".", "Target directory to scan")
 	rootCmd.Flags().StringVarP(&outputFile, "output", "o", "erklig_report", "Output file name (without extension)")
@@ -70,8 +89,12 @@ func init() {
 	rootCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
 	rootCmd.Flags().BoolVar(&htmlOutput, "html", false, "Generate HTML report")
 
-	// Add version command
+	// Serve command flags
+	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8080, "Dashboard server port")
+
+	// Add commands
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(serveCmd)
 }
 
 var versionCmd = &cobra.Command{
@@ -89,6 +112,23 @@ var versionCmd = &cobra.Command{
 // Execute runs the root command
 func Execute() error {
 	return rootCmd.Execute()
+}
+
+// runServe starts the web dashboard server
+func runServe(cmd *cobra.Command, args []string) error {
+	ui.PrintHeader(Version, Codename)
+	
+	color.Cyan("\n🌐 Starting ERKLIG Dashboard...\n")
+	color.White("   Port: %d\n", servePort)
+	color.White("   URL:  http://localhost:%d\n\n", servePort)
+	color.Yellow("   Press Ctrl+C to stop the server\n")
+	
+	// Note: Server package will be imported and used here
+	// For now, just show a placeholder message
+	color.Red("\n   ⚠️  Dashboard feature coming soon in v2.1.0!\n")
+	color.White("   The server module is being developed.\n\n")
+	
+	return nil
 }
 
 // runScan is the main scanning logic

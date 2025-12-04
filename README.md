@@ -402,6 +402,35 @@ If ERKLIG helped you, please consider:
 
 ---
 
+## 🙏 Credits & Acknowledgments
+
+ERKLIG is built with the help of these amazing open-source projects:
+
+### Go Libraries
+
+| Library | Author | Description |
+|---------|--------|-------------|
+| [Cobra](https://github.com/spf13/cobra) | Steve Francia | CLI framework |
+| [Color](https://github.com/fatih/color) | Fatih Arslan | Terminal colors |
+| [Progressbar](https://github.com/schollz/progressbar) | Zack Scholl | Progress indicators |
+| [YAML.v3](https://github.com/go-yaml/yaml) | Go-YAML | YAML parser |
+
+### Security Resources
+
+| Resource | Description |
+|----------|-------------|
+| [OWASP](https://owasp.org) | Web security guidelines |
+| [VirusTotal](https://virustotal.com) | Malware research |
+| [MalwareBazaar](https://bazaar.abuse.ch) | Threat intelligence |
+
+### Inspiration
+
+- [PHP Malware Finder](https://github.com/jvoisin/php-malware-finder) - YARA-based scanner
+- [Linux Malware Detect](https://github.com/rfxn/linux-malware-detect) - LMD project
+- [ClamAV](https://www.clamav.net) - Open source antivirus
+
+---
+
 <p align="center">
   <strong>⚔️ ERKLIG - Your Server's Mighty Guardian ⚔️</strong>
 </p>
