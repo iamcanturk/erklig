@@ -179,6 +179,48 @@ chmod +x erklig-lite.sh
 | `-v, --version` | Show version |
 | `-h, --help` | Show help |
 
+### 🌐 Web Dashboard
+
+ERKLIG includes a built-in web dashboard for visual scan management:
+
+```bash
+# Start dashboard on default port (8080)
+./erklig serve
+
+# Start on custom port
+./erklig serve --port 3000
+```
+
+**Dashboard Features:**
+- 📊 Real-time scan statistics
+- 🔍 Start and monitor scans visually
+- 📋 Interactive threat reports
+- 🔄 WebSocket-based live updates
+- 🌙 Dark theme interface
+
+**REST API Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/scan` | Start new scan |
+| `GET` | `/api/scans` | List all scans |
+| `GET` | `/api/scan/:id` | Get scan status |
+| `GET` | `/api/report/:id` | Get scan report |
+| `DELETE` | `/api/scan/:id` | Delete scan |
+| `GET` | `/api/info` | System info |
+
+**Example API Usage:**
+
+```bash
+# Start a scan
+curl -X POST http://localhost:8080/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"target":"/var/www/html","days":30}'
+
+# Get scan results
+curl http://localhost:8080/api/scans
+```
+
 ### Interactive Commands
 
 | Key | Action | Description |
