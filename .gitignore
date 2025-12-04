@@ -48,3 +48,5 @@ Thumbs.db
 tests/sample_malware/
 tests/temp/
 testbed_mount/
+testenv/
+testenv.sh
