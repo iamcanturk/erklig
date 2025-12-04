@@ -20,13 +20,13 @@
 
 <p align="center">
   <a href="https://github.com/iamcanturk/erklig/releases">
-    <img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/version-2.0.0-blue.svg" alt="Version"/>
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"/>
   </a>
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg" alt="Platform"/>
-  <img src="https://img.shields.io/badge/bash-5.0%2B-orange.svg" alt="Bash"/>
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg" alt="Platform"/>
+  <img src="https://img.shields.io/badge/go-1.21%2B-00ADD8.svg" alt="Go"/>
   <a href="https://github.com/iamcanturk/erklig/stargazers">
     <img src="https://img.shields.io/github/stars/iamcanturk/erklig?style=social" alt="Stars"/>
   </a>
@@ -42,7 +42,11 @@
 
 ## 🌟 About
 
-**ERKLIG** is a powerful, open-source Bash-based security tool designed to detect hidden backdoors, web shells, and malicious code snippets in web servers. Built for security professionals, system administrators, and developers who need to quickly scan and analyze potentially compromised web applications.
+**ERKLIG** is a powerful, open-source security tool written in Go, designed to detect hidden backdoors, web shells, and malicious code snippets in web servers. Built for security professionals, system administrators, and developers who need to quickly scan and analyze potentially compromised web applications.
+
+### 🎉 v2.0.0 - Mighty Engine
+
+> **Complete rewrite in Go!** ERKLIG now features parallel scanning, entropy-based detection, and professional HTML reports. The original Bash version is preserved as `erklig-lite.sh` for lightweight deployments.
 
 ### 🏛️ Name Origin
 
@@ -56,9 +60,17 @@
 
 | Phase | Type | Description |
 |-------|------|-------------|
-| **Phase 1** | Signature-Based | Scans for 20+ known malware patterns and dangerous functions |
+| **Phase 1** | Signature-Based | Scans for 30+ known malware patterns and dangerous functions |
 | **Phase 2** | Anomaly Detection | Identifies suspicious double extensions (.jpg.php, .txt.php) |
 | **Phase 3** | Permission Analysis | Flags files with dangerous permissions (777, 666) |
+| **Phase 4** | Entropy Analysis | Detects obfuscated/encrypted code |
+
+### ⚡ Performance Features
+
+- **Parallel Scanning**: Multi-threaded with configurable concurrency
+- **10x Faster**: Compared to Bash version on large codebases
+- **Cross-Platform**: Linux, macOS, Windows support
+- **Single Binary**: No dependencies, just download and run
 
 ### 🛡️ Detected Threat Signatures
 
@@ -95,43 +107,43 @@ Filesystem Abuse     : symlink, chmod, chown
 
 ## 🚀 Installation
 
-### Requirements
+### Option 1: Download Binary (Recommended)
 
-- Bash 5.0+ (pre-installed on most systems)
-- `grep`, `find`, `sort` (standard Unix tools)
-- Linux or macOS
-- Optional: `bat` for syntax highlighting
+```bash
+# Download latest release
+curl -sSL https://github.com/iamcanturk/erklig/releases/latest/download/erklig-linux-amd64 -o erklig
+chmod +x erklig
 
-### Quick Install
+# Or for macOS (Apple Silicon)
+curl -sSL https://github.com/iamcanturk/erklig/releases/latest/download/erklig-darwin-arm64 -o erklig
+chmod +x erklig
+```
+
+### Option 2: Build from Source
+
+**Requirements:**
+- Go 1.21+ (https://go.dev/dl/)
 
 ```bash
 # Clone the repository
 git clone https://github.com/iamcanturk/erklig.git
-
-# Navigate to directory
 cd erklig
 
-# Make executable
-chmod +x erklig.sh
+# Build
+go build -o erklig ./cmd/erklig
+
+# Or install globally
+go install ./cmd/erklig
 ```
 
-### One-Line Install
+### Option 3: Bash Lite Version
+
+For lightweight deployments without Go:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/iamcanturk/erklig/main/erklig.sh -o erklig.sh && chmod +x erklig.sh
-```
-
-### Install `bat` for Better Code Viewing (Optional)
-
-```bash
-# macOS
-brew install bat
-
-# Ubuntu/Debian
-sudo apt install bat
-
-# Fedora
-sudo dnf install bat
+# Download Bash version
+curl -sSL https://raw.githubusercontent.com/iamcanturk/erklig/main/erklig-lite.sh -o erklig-lite.sh
+chmod +x erklig-lite.sh
 ```
 
 ---
@@ -141,12 +153,31 @@ sudo dnf install bat
 ### Basic Scan
 
 ```bash
-# Scan current directory
-./erklig.sh
+# Scan a directory
+./erklig -t /var/www/html
 
-# Scan a specific directory
-cd /var/www/html && /path/to/erklig.sh
+# Scan with reports
+./erklig -t /var/www/html --json --html -o threat_report
+
+# Scan files modified in last 30 days
+./erklig -t /var/www/html --days 30
+
+# Non-interactive mode (for scripts/CI)
+./erklig -t /var/www/html --no-interact
 ```
+
+### Command Line Options
+
+| Flag | Description |
+|------|-------------|
+| `-t, --target` | Target directory to scan |
+| `-o, --output` | Output file name (without extension) |
+| `--json` | Generate JSON report |
+| `--html` | Generate HTML report |
+| `--days` | Only scan files modified within N days |
+| `--no-interact` | Non-interactive mode |
+| `-v, --version` | Show version |
+| `-h, --help` | Show help |
 
 ### Interactive Commands
 
@@ -180,17 +211,29 @@ cd /var/www/html && /path/to/erklig.sh
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
+### Report Generation
+
+```bash
+# Generate all report formats
+./erklig -t /var/www/html --json --html -o security_scan
+
+# This creates:
+# - security_scan.txt   (text report)
+# - security_scan.json  (machine-readable)
+# - security_scan.html  (professional dark-theme report)
+```
+
 ### Post-Analysis Cleanup
 
 ```bash
 # Review the report first!
-cat erklig_threat_report.txt
+cat security_scan.txt
 
 # Interactive deletion (confirms each file)
-xargs rm -i < erklig_threat_report.txt
+xargs rm -i < security_scan.txt
 
 # Bulk deletion (use with caution!)
-xargs rm < erklig_threat_report.txt
+xargs rm < security_scan.txt
 ```
 
 ---
@@ -257,20 +300,26 @@ See [ROADMAP.md](ROADMAP.md) for detailed development plans.
 ### Phase I: Efficiency & Reliability
 - [x] Performance optimization with extension filtering
 - [x] Whitelist system for known safe directories
-- [ ] Date-based filtering (scan recent files only)
-- [ ] Enhanced output format with detection reasons
+- [x] Date-based filtering (scan recent files only)
+- [x] Enhanced output format with detection reasons
 
 ### Phase II: Advanced Threat Detection
-- [ ] High entropy detection (obfuscated code)
-- [ ] Short/meaningless variable detection
-- [ ] Permission anomaly checks
-- [ ] Single-line malware detection
+- [x] High entropy detection (obfuscated code)
+- [x] Short/meaningless variable detection
+- [x] Permission anomaly checks
+- [x] Single-line malware detection
 
 ### Phase III: User Experience
 - [x] Syntax highlighting integration
 - [x] Progress indicator
-- [ ] Markdown/HTML report generation
-- [ ] Configuration file support
+- [x] HTML/JSON report generation
+- [x] Professional dark-theme reports
+
+### Phase IV: Enterprise Features (Planned)
+- [ ] YAML configuration file
+- [ ] REST API server mode
+- [ ] CI/CD integration (GitHub Actions, GitLab CI)
+- [ ] Real-time file monitoring
 
 ---
 

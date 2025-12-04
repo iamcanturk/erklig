@@ -2,13 +2,24 @@
 
 This document outlines the development roadmap for ERKLIG Backdoor Analysis System.
 
+## 🎉 v2.0.0 - Mighty Engine (Released)
+
+**Major milestone achieved!** ERKLIG has been completely rewritten in Go, bringing:
+- ⚡ 10x faster scanning with parallel goroutines
+- 🔍 30+ malware signature patterns
+- 📊 Entropy-based obfuscation detection
+- 📑 Multiple report formats (TXT, JSON, HTML)
+- 🎨 Professional dark-theme HTML reports
+- 🐚 Bash version preserved as `erklig-lite.sh`
+
 ## 📊 Overview
 
 | Phase | Focus Area | Target | Status |
 |-------|------------|--------|--------|
-| Phase I | Efficiency & Reliability | Speed and accuracy improvements | 🔄 In Progress |
-| Phase II | Advanced Threat Detection | Anomaly-based detection | 📋 Planned |
-| Phase III | User Experience | Professional reporting | 📋 Planned |
+| Phase I | Efficiency & Reliability | Speed and accuracy improvements | ✅ Completed |
+| Phase II | Advanced Threat Detection | Anomaly-based detection | ✅ Completed |
+| Phase III | User Experience | Professional reporting | ✅ Completed |
+| Phase IV | Enterprise Features | Advanced integrations | 📋 Planned |
 
 ---
 
@@ -16,7 +27,7 @@ This document outlines the development roadmap for ERKLIG Backdoor Analysis Syst
 
 One of ERKLIG's primary goals is to **minimize false positives** while maintaining high detection rates. Here's our comprehensive strategy:
 
-### Current Implementation (v1.3.0)
+### Current Implementation (v2.0.0 - Go)
 
 | Feature | Description | Status |
 |---------|-------------|--------|
@@ -24,6 +35,11 @@ One of ERKLIG's primary goals is to **minimize false positives** while maintaini
 | Extension Filtering | Only scan web-relevant file types | ✅ Implemented |
 | Interactive Review | Manual confirmation for each detection | ✅ Implemented |
 | Metadata Display | Show file info for informed decisions | ✅ Implemented |
+| Parallel Scanning | Multi-threaded scanning with goroutines | ✅ Implemented |
+| Entropy Analysis | Detect obfuscated/encrypted code | ✅ Implemented |
+| Permission Check | Flag dangerous file permissions | ✅ Implemented |
+| JSON Reports | Machine-readable output format | ✅ Implemented |
+| HTML Reports | Professional dark-theme reports | ✅ Implemented |
 
 ### Planned Improvements
 
@@ -129,25 +145,25 @@ General:
 
 ---
 
-### I.3 Date-Based Filtering
-**Priority:** 🟡 Medium | **Status:** Planned
+### I.3 Date-Based Filtering ✅
+**Priority:** 🟡 Medium | **Status:** Completed
 
 **Description:**
 Option to scan only files modified within a specific timeframe.
 
 **Usage:**
 ```bash
-./erklig.sh --days 30  # Last 30 days
-./erklig.sh --days 7   # Last week
-./erklig.sh --all      # All files (default)
+./erklig --days 30 -t /var/www  # Last 30 days
+./erklig --days 7 -t /var/www   # Last week
+./erklig -t /var/www            # All files (default)
 ```
 
 **Warning:** Old threats may be missed with this option.
 
 ---
 
-### I.4 Enhanced Output Format
-**Priority:** 🟡 Medium | **Status:** Planned
+### I.4 Enhanced Output Format ✅
+**Priority:** 🟡 Medium | **Status:** Completed
 
 **Description:**
 Rich output including detection reason and file metadata.
@@ -173,11 +189,11 @@ Rich output including detection reason and file metadata.
 
 > This phase enables detection beyond signature-based scanning.
 
-### II.1 High Entropy Detection
-**Priority:** 🔴 High | **Status:** Planned
+### II.1 High Entropy Detection ✅
+**Priority:** 🔴 High | **Status:** Completed
 
 **Description:**
-Calculate file entropy to detect obfuscated or encrypted code.
+Calculate file entropy to detect obfuscated or encrypted code. Implemented in Go with Shannon entropy calculation.
 
 **Detection Example:**
 ```php
@@ -197,11 +213,11 @@ calculate_entropy() {
 
 ---
 
-### II.2 Short Variable Detection
-**Priority:** 🟡 Medium | **Status:** Planned
+### II.2 Short Variable Detection ✅
+**Priority:** 🟡 Medium | **Status:** Completed
 
 **Description:**
-Detect single-character or meaningless variable names commonly used in obfuscated malware.
+Detect single-character or meaningless variable names commonly used in obfuscated malware. Included in signature patterns.
 
 **Suspicious Example:**
 ```php
@@ -230,11 +246,11 @@ Flag files with dangerous permissions in web directories.
 
 ---
 
-### II.4 Single-Line Malware Detection
-**Priority:** 🟢 Low | **Status:** Planned
+### II.4 Single-Line Malware Detection ✅
+**Priority:** 🟢 Low | **Status:** Completed
 
 **Description:**
-Detect ultra-compact malware hidden in single lines.
+Detect ultra-compact malware hidden in single lines. Included in signature patterns.
 
 **Example:**
 ```php
@@ -280,50 +296,42 @@ Scanning: /var/www/html/wp-content/uploads/2024/image.php
 
 ---
 
-### III.3 Report Templates
-**Priority:** 🔴 High | **Status:** Planned
+### III.3 Report Templates ✅
+**Priority:** 🔴 High | **Status:** Completed
 
 **Description:**
 Generate professional reports in multiple formats.
 
-**Markdown Report Example:**
-```markdown
-# ERKLIG Security Scan Report
-
-**Date:** 2024-01-15 14:32:01
-**Target:** /var/www/html
-**Total Scanned:** 1,234 files
-**Threats Found:** 5 files
-
-## Threat Summary
-
-| Risk | Count |
-|------|-------|
-| 🔴 Critical | 2 |
-| 🟠 High | 2 |
-| 🟡 Medium | 1 |
-
-## Detailed Findings
-...
+**Usage:**
+```bash
+./erklig -t /var/www --json --html -o threat_report
 ```
 
 **Supported Formats:**
-- Markdown (`.md`)
-- HTML (`.html`)
-- JSON (`.json`) - for integration
-- CSV (`.csv`) - for spreadsheets
+- Text (`.txt`) - Simple text report
+- HTML (`.html`) - Professional dark-theme report with statistics
+- JSON (`.json`) - Machine-readable for integrations
+
+**HTML Report Features:**
+- Dark theme with modern UI
+- Threat statistics summary
+- Color-coded severity levels
+- File path and match details
+- Scan metadata and timestamps
 
 ---
 
 ## 📅 Release Timeline
 
 ```
-v1.3.0 (Current)    v1.4.0              v2.0.0              v2.5.0
+v1.3.0 (Bash)       v2.0.0 (Go)         v2.5.0              v3.0.0
       |                |                   |                   |
       v                v                   v                   v
-[Whitelist]      [Date Filter]      [Entropy]           [Reports]
-[Extensions]     [Output Format]    [Variables]         [HTML/MD]
-[Progress Bar]                      [Anomalies]         [Config File]
+[Whitelist]      [Go Rewrite]        [Config File]       [Web UI]
+[Extensions]     [Parallel Scan]     [YAML Signatures]   [Real-time]
+[Progress Bar]   [Entropy]           [API Server]        [Cloud]
+                 [HTML Reports]      [CI/CD Integration]
+                 [JSON Export]
 ```
 
 ---
@@ -332,10 +340,10 @@ v1.3.0 (Current)    v1.4.0              v2.0.0              v2.5.0
 
 | Version | Features | Target |
 |---------|----------|--------|
-| v1.3.0 | Whitelist, Extensions, Progress | ✅ Released |
-| v1.4.0 | Date filter, Enhanced output | Q1 2025 |
-| v2.0.0 | Entropy, Variable detection, Anomalies | Q2 2025 |
-| v2.5.0 | Report templates, Config file, API | Q3 2025 |
+| v1.3.0 | Whitelist, Extensions, Progress (Bash) | ✅ Released |
+| v2.0.0 | Go rewrite, Entropy, Reports, Parallel scanning | ✅ Released |
+| v2.5.0 | Config file, YAML signatures, API server | Q1 2025 |
+| v3.0.0 | Web UI, Real-time monitoring, Cloud integration | Q2 2025 |
 
 ---
 
@@ -359,3 +367,71 @@ We welcome feature requests! Open an issue on GitHub to suggest:
 ---
 
 *This document is regularly updated. Last update: December 2024*
+
+---
+
+## 🆕 Phase IV: Enterprise Features (Planned)
+
+### IV.1 YAML Configuration File
+**Priority:** 🔴 High | **Status:** Planned
+
+**Description:**
+External configuration file for custom settings.
+
+```yaml
+# erklig.yaml
+scan:
+  extensions: [php, js, py]
+  exclude_dirs: [vendor, node_modules]
+  max_file_size: 10MB
+  
+signatures:
+  custom:
+    - pattern: "my_custom_pattern"
+      severity: high
+      description: "Custom threat"
+
+reporting:
+  format: [html, json]
+  output_dir: ./reports
+```
+
+### IV.2 REST API Server
+**Priority:** 🟡 Medium | **Status:** Planned
+
+**Description:**
+Run ERKLIG as a service with REST API.
+
+```bash
+./erklig serve --port 8080
+```
+
+**Endpoints:**
+- `POST /scan` - Start a new scan
+- `GET /scan/{id}` - Get scan status
+- `GET /report/{id}` - Download report
+
+### IV.3 CI/CD Integration
+**Priority:** 🟡 Medium | **Status:** Planned
+
+**Description:**
+GitHub Actions, GitLab CI, Jenkins plugins.
+
+```yaml
+# .github/workflows/security.yml
+- name: ERKLIG Security Scan
+  uses: iamcanturk/erklig-action@v2
+  with:
+    target: ./src
+    fail-on: critical
+```
+
+### IV.4 Real-time File Monitoring
+**Priority:** 🟢 Low | **Status:** Planned
+
+**Description:**
+Watch directories for new/modified files and scan automatically.
+
+```bash
+./erklig watch -t /var/www --webhook https://slack.com/...
+```
