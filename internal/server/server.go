@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/websocket/v2"
+	"github.com/iamcanturk/erklig/internal/scanner"
 )
 
 //go:embed static/*
@@ -297,7 +300,7 @@ func (s *Server) broadcastUpdate(event string, data interface{}) {
 	}
 }
 
-// runScan executes the actual scan (placeholder - will integrate with scanner)
+// runScan executes the actual scan with real scanner integration
 func (s *Server) runScan(scanID, target string, days int) {
 	s.mu.Lock()
 	status := s.scans[scanID]
@@ -306,24 +309,93 @@ func (s *Server) runScan(scanID, target string, days int) {
 
 	s.broadcastUpdate("scan_started", status)
 
-	// TODO: Integrate with actual scanner
-	// For now, simulate scanning
-	time.Sleep(2 * time.Second)
+	// Resolve absolute path
+	absPath, err := filepath.Abs(target)
+	if err != nil {
+		s.updateScanError(scanID, fmt.Sprintf("Invalid path: %v", err))
+		return
+	}
 
+	// Check if directory exists
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		s.updateScanError(scanID, fmt.Sprintf("Directory not found: %s", absPath))
+		return
+	}
+
+	// Create scanner configuration
+	cfg := scanner.Config{
+		TargetDir:   absPath,
+		Days:        days,
+		Verbose:     false,
+		Interactive: false,
+	}
+
+	// Initialize scanner with progress callback
+	sc := scanner.New(cfg)
+	
+	// Run the scan
+	findings, err := sc.Scan()
+	if err != nil {
+		s.updateScanError(scanID, fmt.Sprintf("Scan failed: %v", err))
+		return
+	}
+
+	// Convert scanner findings to server findings
+	serverFindings := make([]Finding, 0, len(findings))
+	for _, f := range findings {
+		matches := make([]string, 0, len(f.Matches))
+		categories := make([]string, 0)
+		categoryMap := make(map[string]bool)
+
+		for _, m := range f.Matches {
+			matches = append(matches, m.Pattern)
+			if !categoryMap[m.Category] {
+				categories = append(categories, m.Category)
+				categoryMap[m.Category] = true
+			}
+		}
+
+		serverFindings = append(serverFindings, Finding{
+			FilePath:   f.FilePath,
+			FileName:   f.FileName,
+			FileSize:   f.FileSize,
+			ModTime:    f.ModTime.Format("2006-01-02 15:04:05"),
+			RiskLevel:  f.RiskLevel,
+			Matches:    matches,
+			Categories: categories,
+		})
+	}
+
+	// Update status
 	s.mu.Lock()
 	status.Status = "completed"
 	status.EndTime = time.Now()
-	status.TotalFiles = 100
-	status.ScannedFiles = 100
+	status.Threats = len(serverFindings)
 	status.Progress = 100
-	
+
 	// Create result
 	result := &ScanResult{
 		ScanStatus: *status,
-		Findings:   []Finding{},
+		Findings:   serverFindings,
 	}
 	s.results[scanID] = result
 	s.mu.Unlock()
 
 	s.broadcastUpdate("scan_completed", result)
+}
+
+// updateScanError updates scan status with error
+func (s *Server) updateScanError(scanID, message string) {
+	s.mu.Lock()
+	if status, exists := s.scans[scanID]; exists {
+		status.Status = "error"
+		status.Message = message
+		status.EndTime = time.Now()
+	}
+	s.mu.Unlock()
+
+	s.broadcastUpdate("scan_error", map[string]string{
+		"id":      scanID,
+		"message": message,
+	})
 }

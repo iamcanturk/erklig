@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/iamcanturk/erklig/internal/scanner"
+	"github.com/iamcanturk/erklig/internal/server"
 	"github.com/iamcanturk/erklig/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -121,12 +122,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 	color.Cyan("\n🌐 Starting ERKLIG Dashboard...\n")
 	color.White("   Port: %d\n", servePort)
 	color.White("   URL:  http://localhost:%d\n\n", servePort)
-	color.Yellow("   Press Ctrl+C to stop the server\n")
+	color.Yellow("   Press Ctrl+C to stop the server\n\n")
 	
-	// Note: Server package will be imported and used here
-	// For now, just show a placeholder message
-	color.Red("\n   ⚠️  Dashboard feature coming soon in v2.1.0!\n")
-	color.White("   The server module is being developed.\n\n")
+	// Create and start the server
+	srv := server.NewServer(servePort)
+	return srv.Start()
 	
 	return nil
 }
