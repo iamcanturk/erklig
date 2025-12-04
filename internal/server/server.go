@@ -56,21 +56,27 @@ type Finding struct {
 
 // Server represents the dashboard server
 type Server struct {
-	app     *fiber.App
-	port    int
-	scans   map[string]*ScanStatus
-	results map[string]*ScanResult
-	clients map[*websocket.Conn]bool
-	mu      sync.RWMutex
+	app           *fiber.App
+	port          int
+	scans         map[string]*ScanStatus
+	results       map[string]*ScanResult
+	clients       map[*websocket.Conn]bool
+	quarantineDir string
+	mu            sync.RWMutex
 }
 
 // NewServer creates a new dashboard server
 func NewServer(port int) *Server {
+	// Create quarantine directory
+	quarantineDir := filepath.Join(os.TempDir(), "erklig_quarantine")
+	os.MkdirAll(quarantineDir, 0755)
+
 	s := &Server{
-		port:    port,
-		scans:   make(map[string]*ScanStatus),
-		results: make(map[string]*ScanResult),
-		clients: make(map[*websocket.Conn]bool),
+		port:          port,
+		scans:         make(map[string]*ScanStatus),
+		results:       make(map[string]*ScanResult),
+		clients:       make(map[*websocket.Conn]bool),
+		quarantineDir: quarantineDir,
 	}
 
 	s.setupRoutes()
@@ -98,6 +104,12 @@ func (s *Server) setupRoutes() {
 	// Report endpoints
 	api.Get("/report/:id", s.handleGetReport)
 	api.Get("/report/:id/download", s.handleDownloadReport)
+	
+	// File action endpoints
+	api.Get("/file/view", s.handleViewFile)
+	api.Post("/file/quarantine", s.handleQuarantineFile)
+	api.Post("/file/delete", s.handleDeleteFile)
+	api.Post("/file/restore", s.handleRestoreFile)
 	
 	// System info
 	api.Get("/info", s.handleSystemInfo)
@@ -298,6 +310,165 @@ func (s *Server) broadcastUpdate(event string, data interface{}) {
 	for client := range s.clients {
 		client.WriteMessage(websocket.TextMessage, jsonData)
 	}
+}
+
+// handleViewFile returns the content of a file
+func (s *Server) handleViewFile(c *fiber.Ctx) error {
+	filePath := c.Query("path")
+	if filePath == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "File path is required"})
+	}
+
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": fmt.Sprintf("Could not read file: %v", err)})
+	}
+
+	// Get file info
+	info, _ := os.Stat(filePath)
+
+	return c.JSON(fiber.Map{
+		"path":     filePath,
+		"content":  string(content),
+		"size":     info.Size(),
+		"mod_time": info.ModTime().Format("2006-01-02 15:04:05"),
+	})
+}
+
+// handleQuarantineFile moves a file to quarantine
+func (s *Server) handleQuarantineFile(c *fiber.Ctx) error {
+	var req struct {
+		FilePath string `json:"file_path"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if req.FilePath == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "File path is required"})
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(req.FilePath); os.IsNotExist(err) {
+		return c.Status(404).JSON(fiber.Map{"error": "File not found"})
+	}
+
+	// Create quarantine subdirectory with timestamp
+	timestamp := time.Now().Format("20060102_150405")
+	quarantinePath := filepath.Join(s.quarantineDir, timestamp)
+	os.MkdirAll(quarantinePath, 0755)
+
+	// Move file to quarantine
+	fileName := filepath.Base(req.FilePath)
+	newPath := filepath.Join(quarantinePath, fileName)
+
+	// Save original path metadata
+	metaPath := filepath.Join(quarantinePath, fileName+".meta")
+	os.WriteFile(metaPath, []byte(req.FilePath), 0644)
+
+	// Move the file
+	if err := os.Rename(req.FilePath, newPath); err != nil {
+		// If rename fails (cross-device), try copy and delete
+		content, err := os.ReadFile(req.FilePath)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Could not read file: %v", err)})
+		}
+		if err := os.WriteFile(newPath, content, 0644); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Could not write to quarantine: %v", err)})
+		}
+		os.Remove(req.FilePath)
+	}
+
+	s.broadcastUpdate("file_quarantined", fiber.Map{
+		"original_path":   req.FilePath,
+		"quarantine_path": newPath,
+	})
+
+	return c.JSON(fiber.Map{
+		"message":         "File quarantined successfully",
+		"quarantine_path": newPath,
+	})
+}
+
+// handleDeleteFile permanently deletes a file
+func (s *Server) handleDeleteFile(c *fiber.Ctx) error {
+	var req struct {
+		FilePath string `json:"file_path"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if req.FilePath == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "File path is required"})
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(req.FilePath); os.IsNotExist(err) {
+		return c.Status(404).JSON(fiber.Map{"error": "File not found"})
+	}
+
+	// Delete the file
+	if err := os.Remove(req.FilePath); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Could not delete file: %v", err)})
+	}
+
+	s.broadcastUpdate("file_deleted", fiber.Map{
+		"file_path": req.FilePath,
+	})
+
+	return c.JSON(fiber.Map{"message": "File deleted successfully"})
+}
+
+// handleRestoreFile restores a file from quarantine
+func (s *Server) handleRestoreFile(c *fiber.Ctx) error {
+	var req struct {
+		QuarantinePath string `json:"quarantine_path"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if req.QuarantinePath == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Quarantine path is required"})
+	}
+
+	// Read original path from metadata
+	metaPath := req.QuarantinePath + ".meta"
+	originalPathBytes, err := os.ReadFile(metaPath)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Could not find original path metadata"})
+	}
+	originalPath := string(originalPathBytes)
+
+	// Read quarantined file
+	content, err := os.ReadFile(req.QuarantinePath)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Quarantined file not found"})
+	}
+
+	// Restore to original location
+	if err := os.WriteFile(originalPath, content, 0644); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Could not restore file: %v", err)})
+	}
+
+	// Remove from quarantine
+	os.Remove(req.QuarantinePath)
+	os.Remove(metaPath)
+
+	s.broadcastUpdate("file_restored", fiber.Map{
+		"original_path":   originalPath,
+		"quarantine_path": req.QuarantinePath,
+	})
+
+	return c.JSON(fiber.Map{
+		"message":       "File restored successfully",
+		"original_path": originalPath,
+	})
 }
 
 // runScan executes the actual scan with real scanner integration
